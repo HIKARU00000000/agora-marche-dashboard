@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGORA MARCHÉ 2026 — 予約管理</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --dark:#0F0F0F;--card:#1C1C1C;
+  --border:rgba(196,168,130,0.18);
+  --gold:#C4A862;--gold-l:#E8D5A3;
+  --cream:#FAF6F1;--muted:rgba(250,246,241,0.5);--dim:rgba(250,246,241,0.25);
+}
+body{background:var(--dark);color:var(--cream);font-family:'Helvetica Neue',Arial,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+header{padding:28px 40px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--card)}
+.h-title{font-size:10px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase;margin-bottom:5px}
+.h-sub{font-size:22px;font-weight:300;letter-spacing:.03em;color:var(--cream)}
+.h-right{display:flex;align-items:center;gap:16px}
+.updated{font-size:12px;color:var(--muted)}
+.btn{background:rgba(196,168,130,.12);border:1px solid rgba(196,168,130,.4);color:var(--gold);font-size:12px;letter-spacing:.1em;padding:9px 22px;cursor:pointer;border-radius:20px;text-decoration:none;display:inline-block;transition:all .2s}
+.btn:hover{background:rgba(196,168,130,.22);border-color:var(--gold)}
+.loading{text-align:center;padding:80px 20px;color:var(--muted);font-size:14px;letter-spacing:.2em}
+main{padding:32px 40px;max-width:1240px;margin:0 auto}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px 28px}
+.kpi-label{font-size:10px;letter-spacing:.25em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.kpi-val{font-size:52px;font-weight:200;line-height:1;margin-bottom:4px}
+.kpi-unit{font-size:13px;color:var(--muted)}
+.c-gold{color:var(--gold)}.c-sat{color:#7EB8D4}.c-sun{color:#B888D8}
+.both-note{font-size:12px;color:var(--muted);margin-bottom:20px;padding-left:4px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px}
+.chart-card.wide{grid-column:span 2}
+.chart-title{font-size:11px;letter-spacing:.2em;color:var(--cream);opacity:.7;text-transform:uppercase;margin-bottom:16px;font-weight:500}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap.tall{height:180px}
+.tbl-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:24px}
+.tbl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.tbl-title{font-size:11px;letter-spacing:.2em;color:var(--cream);opacity:.7;text-transform:uppercase;font-weight:500}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=text]{background:rgba(250,246,241,.07);border:1px solid rgba(250,246,241,.15);color:var(--cream);font-size:13px;padding:8px 16px;border-radius:20px;outline:none;width:200px}
+input[type=text]::placeholder{color:var(--dim)}
+input[type=text]:focus{border-color:var(--gold)}
+select{background:#2A2A2A;border:1px solid rgba(250,246,241,.15);color:var(--cream);font-size:12px;padding:8px 14px;border-radius:20px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none}
+select option{background:#2A2A2A;color:var(--cream)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:10px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;padding:0 16px 14px 0;border-bottom:1px solid var(--border);font-weight:400}
+tbody tr{border-bottom:1px solid rgba(250,246,241,.05);transition:background .15s}
+tbody tr:hover{background:rgba(250,246,241,.04)}
+tbody td{padding:13px 16px 13px 0;color:rgba(250,246,241,.85);vertical-align:middle}
+.badge{display:inline-block;font-size:10px;letter-spacing:.08em;padding:4px 12px;border-radius:12px;font-weight:500}
+.b-sat{background:rgba(126,184,212,.18);color:#9AD0E8}
+.b-sun{background:rgba(184,136,216,.18);color:#C8A0E8}
+.b-both{background:rgba(196,168,130,.18);color:var(--gold-l)}
+.b-male{background:rgba(126,184,212,.15);color:#9AD0E8}
+.b-female{background:rgba(255,160,160,.15);color:#FFB8B8}
+.no-data{text-align:center;color:var(--muted);font-size:14px;padding:48px 0}
+.btn-print{background:rgba(250,246,241,.08);border:1px solid rgba(250,246,241,.2);color:var(--cream);font-size:12px;padding:8px 16px;border-radius:20px;cursor:pointer;transition:all .2s}
+.btn-print:hover{background:rgba(250,246,241,.15)}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:768px){
+  header{padding:16px;flex-direction:column;align-items:flex-start;gap:10px}
+  .h-sub{font-size:18px}
+  main{padding:12px}
+  .kpi-grid{grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+  .kpi{padding:14px}
+  .kpi-val{font-size:32px}
+  .kpi-label{font-size:9px}
+  .charts-grid{grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+  .chart-card.wide{grid-column:span 1}
+  .chart-wrap{height:240px}
+  .chart-wrap.tall{height:200px}
+  .tbl-card{padding:16px}
+  .tbl-head{flex-direction:column;align-items:flex-start}
+  .controls{width:100%}
+  input[type=text]{width:100%}
+  select{flex:1}
+  .btn-print{flex:1;text-align:center}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <p class="h-title">AGORA MARCHÉ 2026</p>
+    <p class="h-sub">予約管理ダッシュボード</p>
+  </div>
+  <div class="h-right">
+    <span class="updated" id="updatedAt">読み込み中...</span>
+    <button class="btn" onclick="loadData()">↻ 最新に更新</button>
+  </div>
+</header>
+
+<div id="loadingArea" class="loading">データを読み込んでいます...</div>
+
+<div id="mainContent" style="display:none">
+<main>
+  <div class="kpi-grid">
+    <div class="kpi"><p class="kpi-label">総来場人数</p><p class="kpi-val c-gold" id="k-total">0</p><p class="kpi-unit">名</p></div>
+    <div class="kpi"><p class="kpi-label">9/12（土）来場予定</p><p class="kpi-val c-sat" id="k-sat">0</p><p class="kpi-unit">名</p></div>
+    <div class="kpi"><p class="kpi-label">9/13（日）来場予定</p><p class="kpi-val c-sun" id="k-sun">0</p><p class="kpi-unit">名</p></div>
+  </div>
+  <p class="both-note" id="k-both-note"></p>
+
+  <div class="charts-grid">
+    <div class="chart-card"><p class="chart-title">日程別 男女比</p><div class="chart-wrap"><canvas id="cDateGender"></canvas></div></div>
+    <div class="chart-card"><p class="chart-title">年齢分布</p><div class="chart-wrap"><canvas id="cAge"></canvas></div></div>
+    <div class="chart-card wide"><p class="chart-title">きっかけ分布</p><div id="sourceWrap" class="chart-wrap"><canvas id="cSource"></canvas></div></div>
+    <div class="chart-card wide"><p class="chart-title">予約数の推移（累計）</p><div class="chart-wrap tall"><canvas id="cTimeline"></canvas></div></div>
+  </div>
+
+  <div class="tbl-card">
+    <div class="tbl-head">
+      <p class="tbl-title">予約一覧</p>
+      <div class="controls">
+        <input type="text" id="search" placeholder="名前で検索...">
+        <select id="fDate"><option value="">全日程</option><option value="9/12">9/12（土）</option><option value="9/13">9/13（日）</option><option value="両日">両日参加</option></select>
+        <select id="fGender"><option value="">全性別</option><option value="男性">男性</option><option value="女性">女性</option></select>
+        <button class="btn-print" onclick="printList('9/12')">🖨 9/12 印刷</button>
+        <button class="btn-print" onclick="printList('9/13')">🖨 9/13 印刷</button>
+      </div>
+    </div>
+    <div class="tbl-scroll">
+      <table><thead><tr><th>#</th><th>お名前</th><th>性別</th><th>年齢</th><th>参加日程</th><th>来場予定時間</th><th>きっかけ</th><th>予約日時</th></tr></thead>
+      <tbody id="tbody"></tbody></table>
+    </div>
+    <p id="noData" class="no-data" style="display:none">該当する予約がありません</p>
+  </div>
+</main>
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZJSB9JaMoUaqUfzxFOeI4D6_WdcYxGSzfoVAkFUEYnYB4pRPO37yS5S6yUOXoiLlX-AZIh91bclvP/pub?gid=1568387280&single=true&output=csv';
+const CREAM = '#FAF6F1';
+Chart.register(ChartDataLabels);
+let DATA = [];
+let charts = {};
+
+function parseCount(s) {
+  const m = (s||'').match(/(\d+)/);
+  return m ? parseInt(m[1]) : 1;
+}
+
+function parseRows(rows) {
+  return rows.filter(r => r['タイムスタンプ']).map(r => {
+    const g = k => (r[k]||'').trim();
+    const name     = g('お名前（カタカナ フルネーム）') || g('お名前(カタカナ フルネーム）');
+    const gender   = g('性別');
+    const age      = g('年齢');
+    const source   = g('何を見て知りましたか？');
+    const ts       = g('タイムスタンプ');
+    const time     = g('来場予定時間（おおよそで構いません）') || g('大体何時頃にご来店されますか？(目安で構いません。実際のご来店時間と異なっても大丈夫です）');
+    const dateRaw  = g('参加希望日') || g('参加日程');
+    const c11      = g('9/12（土）の参加人数');
+    const c12      = g('9/13（日）の参加人数');
+
+    let date, count12, count13;
+    if (dateRaw.includes('両日') || (dateRaw.includes('12') && dateRaw.includes('13'))) {
+      date = '両日';
+      count12 = parseCount(c11) || 1;
+      count13 = parseCount(c12) || 1;
+    } else if (dateRaw.includes('12')) {
+      date = '9/12'; count12 = parseCount(c11) || 1; count13 = 0;
+    } else if (dateRaw.includes('13')) {
+      date = '9/13'; count12 = 0; count13 = parseCount(c12) || 1;
+    } else {
+      return null;
+    }
+    return { name, gender, age, source, ts, time, date, count12, count13, count: Math.max(count12, count13) };
+  }).filter(Boolean).filter(r => r.name || r.gender);
+}
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function pct(v, t) { return t === 0 ? '0%' : (v/t*100).toFixed(1)+'%'; }
+
+const sc = {
+  x: { ticks: { color: 'rgba(250,246,241,.55)', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' }, border: { color: 'rgba(255,255,255,.08)' } },
+  y: { ticks: { color: 'rgba(250,246,241,.55)', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' }, border: { color: 'rgba(255,255,255,.08)' } }
+};
+
+function renderCharts() {
+  const total = DATA.reduce((a,r) => a + (r.count12||0), 0) + DATA.reduce((a,r) => a + (r.count13||0), 0);
+  const sat   = DATA.reduce((a,r) => a + (r.count12||0), 0);
+  const sun   = DATA.reduce((a,r) => a + (r.count13||0), 0);
+
+  // 日程別男女比
+  const dgMale   = [
+    DATA.filter(r=>r.gender==='男性').reduce((a,r)=>a+(r.count12||0),0),
+    DATA.filter(r=>r.gender==='男性').reduce((a,r)=>a+(r.count13||0),0)
+  ];
+  const dgFemale = [
+    DATA.filter(r=>r.gender==='女性').reduce((a,r)=>a+(r.count12||0),0),
+    DATA.filter(r=>r.gender==='女性').reduce((a,r)=>a+(r.count13||0),0)
+  ];
+  const dgTotal  = [dgMale[0]+dgFemale[0], dgMale[1]+dgFemale[1]];
+
+  destroyChart('cDateGender');
+  charts['cDateGender'] = new Chart(document.getElementById('cDateGender'), {
+    type: 'bar',
+    data: {
+      labels: ['9/12（土）','9/13（日）'],
+      datasets: [
+        { label:'男性', data: dgMale,   backgroundColor:'#5BA8C8', borderRadius:4, borderSkipped:false },
+        { label:'女性', data: dgFemale, backgroundColor:'#E87070', borderRadius:4, borderSkipped:false }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: { labels: { color: CREAM, font: { size:12 }, padding:20 } },
+        datalabels: {
+          color: CREAM, font: { size:11, weight:'500' }, anchor:'center', align:'center',
+          formatter: (v, ctx) => v === 0 ? '' : [v+'名', pct(v, dgTotal[ctx.dataIndex])]
+        }
+      },
+      scales: { x: { ...sc.x }, y: { ...sc.y, beginAtZero:true, ticks: { ...sc.y.ticks, stepSize:5 } } },
+      layout: { padding: { top:8 } }
+    }
+  });
+
+  // 年齢分布
+  const ab = {};
+  DATA.forEach(r => { const a = r.age.replace('歳',''); if (a) ab[a] = (ab[a]||0) + (r.count||1); });
+  const ak = Object.keys(ab).sort((a,b) => parseInt(a)-parseInt(b));
+  destroyChart('cAge');
+  charts['cAge'] = new Chart(document.getElementById('cAge'), {
+    type: 'bar',
+    data: { labels: ak.map(k=>k+'歳'), datasets: [{ data: ak.map(k=>ab[k]), backgroundColor:'rgba(196,168,130,.65)', borderRadius:4, borderSkipped:false }] },
+    options: {
+      plugins: {
+        legend: { display:false },
+        datalabels: { color:CREAM, font:{ size:10, weight:'500' }, anchor:'end', align:'top', formatter: v => pct(v, total) }
+      },
+      scales: { ...sc, y: { ...sc.y, ticks: { ...sc.y.ticks, stepSize:1 } } },
+      layout: { padding: { top:20 } }
+    }
+  });
+
+  // きっかけ分布
+  const sb = {};
+  DATA.forEach(r => { const s = r.source||'未回答'; sb[s] = (sb[s]||0) + (r.count||1); });
+  const sk = Object.keys(sb).sort((a,b) => sb[b]-sb[a]);
+  const isMobile = window.innerWidth <= 768;
+  const rowH = isMobile ? 48 : 38;
+  const sourceH = Math.max(isMobile ? 300 : 220, sk.length * rowH + 60);
+  const sourceWrap = document.getElementById('sourceWrap');
+  sourceWrap.style.height = sourceH + 'px';
+  sourceWrap.style.minHeight = sourceH + 'px';
+  const barColors = ['#C4A862','#5BA8C8','#9B60C4','#5BC49B','#E87070','#E8C040','#A0C860'];
+  destroyChart('cSource');
+  charts['cSource'] = new Chart(document.getElementById('cSource'), {
+    type: 'bar',
+    data: {
+      labels: sk,
+      datasets: [{ data: sk.map(k=>sb[k]), backgroundColor: sk.map((_,i)=>barColors[i%barColors.length]), borderRadius:4, borderSkipped:false }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display:false },
+        datalabels: {
+          color: CREAM, font: { size: isMobile?11:12, weight:'500' }, anchor:'end', align:'right',
+          formatter: v => `${v}名 ${pct(v,total)}`
+        }
+      },
+      scales: {
+        x: { ...sc.x, ticks: { ...sc.x.ticks, stepSize:1 } },
+        y: { ticks: { color:CREAM, font:{ size:isMobile?11:12 } }, grid: { display:false }, border: { display:false } }
+      },
+      layout: { padding: { right: isMobile?120:100, top:4, bottom:4 } },
+      maintainAspectRatio: false
+    }
+  });
+
+  // 累計推移
+  const sorted = [...DATA].filter(r=>r.ts).sort((a,b) => new Date(a.ts)-new Date(b.ts));
+  const dm = {}; let cum = 0;
+  sorted.forEach(r => { const d = r.ts.split(' ')[0]; cum++; dm[d] = cum; });
+  destroyChart('cTimeline');
+  charts['cTimeline'] = new Chart(document.getElementById('cTimeline'), {
+    type: 'line',
+    data: { labels: Object.keys(dm), datasets: [{ data: Object.values(dm), borderColor:'#C4A862', backgroundColor:'rgba(196,168,130,.1)', borderWidth:2, pointRadius:4, pointBackgroundColor:'#C4A862', pointBorderColor:'#1C1C1C', pointBorderWidth:2, fill:true, tension:.35 }] },
+    options: { plugins: { legend: { display:false }, datalabels: { display:false } }, scales: sc }
+  });
+}
+
+function renderTable() {
+  const q  = document.getElementById('search').value.toLowerCase();
+  const fd = document.getElementById('fDate').value;
+  const fg = document.getElementById('fGender').value;
+  const filtered = DATA.filter(r => {
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    if (fd && r.date !== fd) return false;
+    if (fg && r.gender !== fg) return false;
+    return true;
+  });
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  document.getElementById('noData').style.display = filtered.length === 0 ? 'block' : 'none';
+  filtered.forEach((r, i) => {
+    const db = r.date==='9/12' ? '<span class="badge b-sat">9/12 土</span>'
+             : r.date==='9/13' ? '<span class="badge b-sun">9/13 日</span>'
+             : r.date==='両日' ? '<span class="badge b-both">両日</span>' : r.date;
+    const gb = r.gender==='男性' ? '<span class="badge b-male">男性</span>'
+             : r.gender==='女性' ? '<span class="badge b-female">女性</span>' : r.gender||'—';
+    const ts = r.ts ? r.ts.replace('2026/','').split(' ')[0]+' '+(r.ts.split(' ')[1]||'').slice(0,5) : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="color:var(--muted)">${i+1}</td><td style="font-weight:500">${r.name||'—'}</td><td>${gb}</td><td>${r.age||'—'}</td><td>${db}</td><td style="color:var(--muted)">${r.time||'—'}</td><td style="color:var(--muted)">${r.source||'—'}</td><td style="color:var(--muted);font-size:11px">${ts}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function render() {
+  const sat  = DATA.reduce((a,r) => a+(r.count12||0), 0);
+  const sun  = DATA.reduce((a,r) => a+(r.count13||0), 0);
+  document.getElementById('k-total').textContent = sat + sun;
+  document.getElementById('k-sat').textContent   = sat;
+  document.getElementById('k-sun').textContent   = sun;
+  const bothCount = DATA.filter(r=>r.date==='両日').length;
+  document.getElementById('k-both-note').textContent = `※ うち両日参加: ${bothCount}名（9/12・9/13 両方にカウント済み）`;
+  renderCharts();
+  renderTable();
+  document.getElementById('loadingArea').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  document.getElementById('updatedAt').textContent = '取得: ' + new Date().toLocaleTimeString('ja-JP');
+}
+
+function loadData() {
+  document.getElementById('updatedAt').textContent = '更新中...';
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: results => { DATA = parseRows(results.data); render(); },
+    error: () => { document.getElementById('loadingArea').textContent = 'データの読み込みに失敗しました。'; }
+  });
+}
+
+document.getElementById('search').addEventListener('input', renderTable);
+document.getElementById('fDate').addEventListener('change', renderTable);
+document.getElementById('fGender').addEventListener('change', renderTable);
+
+function printList(date) {
+  const list = DATA.filter(r => r.date===date || r.date==='両日').sort((a,b) => (a.name||'').localeCompare(b.name||'','ja'));
+  const dateLabel = date==='9/12' ? '2026年9月12日（土）' : '2026年9月13日（日）';
+  const cols = 4;
+  const perCol = Math.ceil(list.length/cols);
+  const columns = Array.from({length:cols}, (_,ci) =>
+    list.slice(ci*perCol, (ci+1)*perCol).map((r,i) => `
+      <div class="row">
+        <span class="num">${ci*perCol+i+1}</span>
+        <span class="box"></span>
+        <span class="name">${r.name||'—'}</span>
+        <span class="gender ${r.gender==='男性'?'male':'female'}">${r.gender==='男性'?'男':'女'}</span>
+      </div>`).join('')
+  );
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>受付リスト ${dateLabel}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Hiragino Kaku Gothic Pro','Helvetica Neue',sans-serif;color:#111;padding:12px;font-size:11px}
+.brand{font-size:10px;letter-spacing:.25em;color:#B8903C;text-transform:uppercase;margin-bottom:2px}
+h1{font-size:14px;font-weight:700;margin-bottom:3px}
+.meta{font-size:10px;color:#666;margin-bottom:10px;display:flex;gap:16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0 12px;border-top:2px solid #111}
+.col{border-right:1px solid #DDD;padding-right:8px}
+.col:last-child{border-right:none}
+.col-head{font-size:8px;letter-spacing:.1em;color:#888;text-transform:uppercase;padding:4px 0;border-bottom:1px solid #BBB;margin-bottom:2px}
+.row{display:flex;align-items:center;gap:4px;padding:3.5px 0;border-bottom:1px solid #EBEBEB}
+.row:nth-child(even){background:#F8F8F8}
+.num{color:#CCC;font-size:9px;width:18px;flex-shrink:0;text-align:right}
+.box{display:inline-block;width:12px;height:12px;border:1.5px solid #444;border-radius:2px;flex-shrink:0}
+.name{font-weight:600;font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gender{font-size:10px;font-weight:600;width:14px;flex-shrink:0}
+.male{color:#3A8FC4}.female{color:#E06080}
+@media print{body{padding:8px}@page{margin:8mm;size:A4 portrait}}
+</style></head><body>
+<p class="brand">AGORA MARCHÉ</p>
+<h1>受付チェックリスト — ${dateLabel}</h1>
+<div class="meta">
+  <span>総数: ${list.length}名</span>
+  <span>男性: ${list.filter(r=>r.gender==='男性').length}名</span>
+  <span>女性: ${list.filter(r=>r.gender==='女性').length}名</span>
+  <span>印刷日時: ${new Date().toLocaleString('ja-JP')}</span>
+</div>
+<div class="grid">
+${columns.map(col=>`<div class="col"><div class="col-head">お名前</div>${col}</div>`).join('')}
+</div>
+</body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+loadData();
+</script>
+</body>
+</html>
