@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AGORA MARCHÉ 2026 — 予約管理</title>
+<title>AGORA SOCIAL — 予約管理</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -62,6 +63,56 @@ tbody td{padding:13px 16px 13px 0;color:rgba(250,246,241,.85);vertical-align:mid
 .btn-print{background:rgba(250,246,241,.08);border:1px solid rgba(250,246,241,.2);color:var(--cream);font-size:12px;padding:8px 16px;border-radius:20px;cursor:pointer;transition:all .2s}
 .btn-print:hover{background:rgba(250,246,241,.15)}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.event-tabs{display:flex;gap:6px;padding:20px 40px 0;max-width:1240px;margin:0 auto;border-bottom:1px solid var(--border)}
+.event-tab{background:transparent;border:1px solid transparent;border-bottom:none;color:var(--muted);font-size:12px;letter-spacing:.12em;padding:10px 22px;cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s;font-family:inherit;margin-bottom:-1px;position:relative;top:1px}
+.event-tab:hover{color:var(--cream)}
+.event-tab.active{background:var(--card);color:var(--gold);border-color:var(--border);border-bottom-color:var(--card)}
+.event-tab .badge-past{font-size:9px;letter-spacing:.1em;color:var(--dim);margin-left:8px;padding:2px 6px;border-radius:8px;background:rgba(250,246,241,.04)}
+.sub-tabs{display:flex;gap:6px;padding:14px 40px 0;max-width:1240px;margin:0 auto}
+.sub-tab{background:transparent;border:none;color:var(--muted);font-size:13px;padding:8px 20px;cursor:pointer;border-radius:16px;transition:all .2s;font-family:inherit}
+.sub-tab:hover{color:var(--cream)}
+.sub-tab.active{background:rgba(196,168,130,.15);color:var(--gold)}
+/* ===== Roster view ===== */
+.roster-breakdown{font-size:12px;color:var(--muted);margin:14px 4px 22px;line-height:1.8}
+.roster-breakdown strong{color:var(--cream);font-weight:500}
+.c-male-text{color:#7EB8D4}.c-female-text{color:#E88080}
+.roster-controls{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:18px;margin-bottom:16px;display:flex;flex-direction:column;gap:12px}
+.roster-search-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.roster-search-row input[type=text]{flex:1;min-width:200px}
+.btn-walkin{background:rgba(196,168,130,.18);border:1px solid var(--gold);color:var(--gold);font-size:13px;letter-spacing:.08em;padding:9px 22px;border-radius:20px;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-walkin:hover{background:var(--gold);color:var(--card)}
+.hiragana-row{display:flex;gap:4px;flex-wrap:wrap}
+.hiragana-row button{background:rgba(250,246,241,.05);border:1px solid rgba(250,246,241,.1);color:var(--cream);font-size:14px;width:36px;height:36px;border-radius:50%;cursor:pointer;font-family:inherit;transition:all .15s;font-weight:500}
+.hiragana-row button:hover{background:rgba(250,246,241,.1)}
+.hiragana-row button.active{background:var(--gold);color:var(--card);border-color:var(--gold)}
+.roster-list{display:flex;flex-direction:column;gap:14px}
+.roster-row-header{font-size:11px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;padding:14px 4px 6px;border-bottom:1px solid rgba(250,246,241,.08);margin-bottom:6px}
+.reservation-group{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.person-card{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid rgba(250,246,241,.04);transition:background .15s}
+.person-card:last-child{border-bottom:none}
+.person-card.checked-in{background:rgba(126,196,120,.08)}
+.person-badge{display:inline-block;font-size:9px;letter-spacing:.1em;padding:3px 8px;border-radius:4px;font-weight:600;flex-shrink:0;min-width:48px;text-align:center}
+.badge-organizer{background:rgba(196,168,130,.25);color:var(--gold-l)}
+.badge-companion{background:rgba(250,246,241,.1);color:var(--muted)}
+.badge-walkin{background:rgba(126,196,120,.3);color:#A8E8A2}
+.person-name{font-size:15px;font-weight:500;flex:1;min-width:0}
+.person-meta{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);flex-shrink:0}
+.person-meta .gender-m{color:#7EB8D4}
+.person-meta .gender-f{color:#E88080}
+.plan-badge{background:rgba(250,246,241,.06);padding:2px 8px;border-radius:4px;font-size:11px}
+.plan-badge.nomi{background:rgba(196,168,130,.18);color:var(--gold-l)}
+.checkin-btn{background:rgba(250,246,241,.08);border:1px solid rgba(250,246,241,.2);color:var(--cream);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;font-weight:500;transition:all .15s;flex-shrink:0}
+.checkin-btn:hover{background:rgba(250,246,241,.14)}
+.checkin-btn.checked{background:rgba(126,196,120,.25);border-color:#7EC478;color:#A8E8A2}
+.roster-empty{text-align:center;padding:60px 20px;color:var(--muted)}
+/* ===== QR Modal ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;max-width:420px;width:100%;text-align:center}
+.modal-content h3{font-size:16px;letter-spacing:.15em;color:var(--gold);margin-bottom:20px;text-transform:uppercase;font-weight:500}
+.qr-container{background:#fff;padding:20px;border-radius:8px;display:inline-block;margin-bottom:16px}
+.qr-container img{display:block}
+.qr-url{font-size:11px;color:var(--muted);word-break:break-all;margin-bottom:20px;padding:10px;background:rgba(250,246,241,.04);border-radius:4px}
+.modal-close{background:var(--gold);color:var(--card);border:none;padding:10px 32px;border-radius:20px;cursor:pointer;font-size:13px;letter-spacing:.1em;font-weight:500;font-family:inherit}
 @media(max-width:768px){
   header{padding:16px;flex-direction:column;align-items:flex-start;gap:10px}
   .h-sub{font-size:18px}
@@ -86,7 +137,7 @@ tbody td{padding:13px 16px 13px 0;color:rgba(250,246,241,.85);vertical-align:mid
 <body>
 <header>
   <div>
-    <p class="h-title">AGORA MARCHÉ 2026</p>
+    <p class="h-title">AGORA SOCIAL</p>
     <p class="h-sub">予約管理ダッシュボード</p>
   </div>
   <div class="h-right">
@@ -98,11 +149,80 @@ tbody td{padding:13px 16px 13px 0;color:rgba(250,246,241,.85);vertical-align:mid
 <div id="loadingArea" class="loading">データを読み込んでいます...</div>
 
 <div id="mainContent" style="display:none">
-<main>
+<div class="event-tabs">
+  <button class="event-tab active" data-event="2027-01" onclick="setEvent('2027-01')">2027年1月開催</button>
+  <button class="event-tab" data-event="2026-11" onclick="setEvent('2026-11')">2026年11月開催</button>
+  <button class="event-tab" data-event="2026-09" onclick="setEvent('2026-09')">2026年9月開催</button>
+</div>
+<div class="sub-tabs" id="subTabs" style="display:none">
+  <button class="sub-tab active" data-sub="data" onclick="setSubTab('data')">予約データ</button>
+  <button class="sub-tab" data-sub="roster" onclick="setSubTab('roster')">受付名簿</button>
+</div>
+
+<!-- Roster view (2027-01の受付名簿サブタブ) -->
+<main id="main-roster" style="display:none">
+  <div class="kpi-grid">
+    <div class="kpi"><p class="kpi-label">事前申込の来場</p><p class="kpi-val c-gold"><span id="r-k-checked">0</span><span style="font-size:22px;color:var(--muted);"> / <span id="r-k-reserved">0</span></span></p><p class="kpi-unit">名</p></div>
+    <div class="kpi"><p class="kpi-label">当日参加</p><p class="kpi-val c-sat" id="r-k-walkin">0</p><p class="kpi-unit">名</p></div>
+    <div class="kpi"><p class="kpi-label">まだ来ていない</p><p class="kpi-val c-sun" id="r-k-notyet">0</p><p class="kpi-unit">名</p></div>
+  </div>
+  <p class="roster-breakdown">
+    来場　<strong class="c-male-text">男 <span id="r-male-checked">0</span></strong>　・　<strong class="c-female-text">女 <span id="r-female-checked">0</span></strong>　／　申込　<strong class="c-male-text">男 <span id="r-male-reserved">0</span></strong>　・　<strong class="c-female-text">女 <span id="r-female-reserved">0</span></strong>
+  </p>
+  <div class="roster-controls">
+    <div class="roster-search-row">
+      <input type="text" id="rosterSearch" placeholder="名前で検索...">
+      <select id="rosterGender">
+        <option value="">全性別</option>
+        <option value="男性">男性</option>
+        <option value="女性">女性</option>
+      </select>
+      <select id="rosterCheckin">
+        <option value="">全来場状態</option>
+        <option value="checked">来場済み</option>
+        <option value="notyet">未来場</option>
+      </select>
+      <select id="rosterPlan">
+        <option value="">全プラン</option>
+        <option value="通常">通常プラン</option>
+        <option value="飲み放題">飲み放題プラン</option>
+      </select>
+      <button class="btn-walkin" onclick="showWalkinQr()">📱 当日参加QR発行</button>
+    </div>
+    <div class="hiragana-row" id="hiraganaRow">
+      <button data-row="" class="active">全</button>
+      <button data-row="あ">あ</button>
+      <button data-row="か">か</button>
+      <button data-row="さ">さ</button>
+      <button data-row="た">た</button>
+      <button data-row="な">な</button>
+      <button data-row="は">は</button>
+      <button data-row="ま">ま</button>
+      <button data-row="や">や</button>
+      <button data-row="ら">ら</button>
+      <button data-row="わ">わ</button>
+    </div>
+  </div>
+  <div id="rosterList" class="roster-list"></div>
+  <p id="rosterEmpty" class="roster-empty" style="display:none">該当する予約がありません</p>
+</main>
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="qrModal" style="display:none;">
+  <div class="modal-content">
+    <h3>当日参加 受付QR</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">スタッフがこのQRを提示し、当日参加者にスマホで読み取ってもらう</p>
+    <div class="qr-container" id="qrCode"></div>
+    <p class="qr-url" id="qrUrl"></p>
+    <button class="modal-close" onclick="closeQrModal()">閉じる</button>
+  </div>
+</div>
+
+<main id="main-data">
   <div class="kpi-grid">
     <div class="kpi"><p class="kpi-label">総来場人数</p><p class="kpi-val c-gold" id="k-total">0</p><p class="kpi-unit">名</p></div>
-    <div class="kpi"><p class="kpi-label">9/12（土）来場予定</p><p class="kpi-val c-sat" id="k-sat">0</p><p class="kpi-unit">名</p></div>
-    <div class="kpi"><p class="kpi-label">9/13（日）来場予定</p><p class="kpi-val c-sun" id="k-sun">0</p><p class="kpi-unit">名</p></div>
+    <div class="kpi"><p class="kpi-label" id="k-sat-label">11/14（土）来場予定</p><p class="kpi-val c-sat" id="k-sat">0</p><p class="kpi-unit">名</p></div>
+    <div class="kpi"><p class="kpi-label" id="k-sun-label">11/15（日）来場予定</p><p class="kpi-val c-sun" id="k-sun">0</p><p class="kpi-unit">名</p></div>
   </div>
   <p class="both-note" id="k-both-note"></p>
 
@@ -118,10 +238,10 @@ tbody td{padding:13px 16px 13px 0;color:rgba(250,246,241,.85);vertical-align:mid
       <p class="tbl-title">予約一覧</p>
       <div class="controls">
         <input type="text" id="search" placeholder="名前で検索...">
-        <select id="fDate"><option value="">全日程</option><option value="9/12">9/12（土）</option><option value="9/13">9/13（日）</option><option value="両日">両日参加</option></select>
+        <select id="fDate"></select>
         <select id="fGender"><option value="">全性別</option><option value="男性">男性</option><option value="女性">女性</option></select>
-        <button class="btn-print" onclick="printList('9/12')">🖨 9/12 印刷</button>
-        <button class="btn-print" onclick="printList('9/13')">🖨 9/13 印刷</button>
+        <button class="btn-print" id="btn-print-sat">🖨 印刷</button>
+        <button class="btn-print" id="btn-print-sun">🖨 印刷</button>
       </div>
     </div>
     <div class="tbl-scroll">
@@ -134,44 +254,287 @@ tbody td{padding:13px 16px 13px 0;color:rgba(250,246,241,.85);vertical-align:mid
 </div>
 
 <script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZJSB9JaMoUaqUfzxFOeI4D6_WdcYxGSzfoVAkFUEYnYB4pRPO37yS5S6yUOXoiLlX-AZIh91bclvP/pub?gid=1568387280&single=true&output=csv';
+// 開催ごとに独立したスプレッドシート
+const CSV_PLACEHOLDER = 'PLACEHOLDER_TBD';
+const CSV_URLS = {
+  '2026-09': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZJSB9JaMoUaqUfzxFOeI4D6_WdcYxGSzfoVAkFUEYnYB4pRPO37yS5S6yUOXoiLlX-AZIh91bclvP/pub?gid=1568387280&single=true&output=csv',
+  '2026-11': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSBM5S7CbRjPYkoh05ZQZiQ-yXrPahTc6fokZrUhA92lNh-nMAuyvAnvSm1pBTP-7U-MddJd5y_nxud/pub?gid=677021138&single=true&output=csv',
+  '2027-01': 'https://docs.google.com/spreadsheets/d/1sMSNUt1BxNrPeakzhtBqFZAGu0aOva6J-gGNLm9iABA/export?format=csv&gid=230713247',
+};
+// 2027-01 受付名簿用 (per-person)
+const ROSTER_CSV_URL = 'https://docs.google.com/spreadsheets/d/1sMSNUt1BxNrPeakzhtBqFZAGu0aOva6J-gGNLm9iABA/export?format=csv&gid=219271655';
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxoJfZrbTFi2naodBDipUkszLrYE3IGpfLD6MG0nCvOGZ10btl39k-RL1zR-1SYMLbJ2Q/exec';
+const WALKIN_URL = WEBAPP_URL + '?action=walkin';
+
+// ひらがな行マッピング
+const KANA_ROWS = {
+  'あ':'アイウエオァィゥェォ','か':'カキクケコガギグゲゴ','さ':'サシスセソザジズゼゾ',
+  'た':'タチツテトダヂヅデドッ','な':'ナニヌネノ','は':'ハヒフヘホバビブベボパピプペポ',
+  'ま':'マミムメモ','や':'ヤユヨャュョ','ら':'ラリルレロ','わ':'ワヲン',
+};
+let ROSTER = [];
+let currentSubTab = 'data';
+let rosterFilter = { search: '', row: '', gender: '', checkin: '', plan: '' };
 const CREAM = '#FAF6F1';
 Chart.register(ChartDataLabels);
+
+const EVENTS = {
+  '2027-01': {
+    id: '2027-01', label: '2027年1月開催',
+    dateSat: '1/23', dateSun: '',
+    dateSatShort: '1/23（土）', dateSunShort: '',
+    dateSatFull: '2027年1月23日（土）', dateSunFull: '',
+    singleDay: true,
+  },
+  '2026-11': {
+    id: '2026-11', label: '2026年11月開催',
+    dateSat: '11/14', dateSun: '11/15',
+    dateSatShort: '11/14（土）', dateSunShort: '11/15（日）',
+    dateSatFull: '2026年11月14日（土）', dateSunFull: '2026年11月15日（日）',
+  },
+  '2026-09': {
+    id: '2026-09', label: '2026年9月開催',
+    dateSat: '9/12', dateSun: '9/13',
+    dateSatShort: '9/12（土）', dateSunShort: '9/13（日）',
+    dateSatFull: '2026年9月12日（土）', dateSunFull: '2026年9月13日（日）',
+  },
+};
+let currentEventId = '2027-01';
+let ALL_DATA = [];
 let DATA = [];
 let charts = {};
 
+function getEvent() { return EVENTS[currentEventId]; }
+
 function parseCount(s) {
+  const val = (s||'').trim();
+  if (!val || val.includes('参加しない')) return 0;
+  const m = val.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 1;
+}
+
+// 旧仕様(2026-09開催時の運用と同じ挙動): 空欄はデフォルト1名扱い
+function parseCountLegacy(s) {
   const m = (s||'').match(/(\d+)/);
   return m ? parseInt(m[1]) : 1;
 }
 
 function parseRows(rows) {
   return rows.filter(r => r['タイムスタンプ']).map(r => {
-    const g = k => (r[k]||'').trim();
+    // 完全一致 → なければ前方一致/部分一致でフォールバック（列名に接尾辞が付いても拾えるように）
+    const g = k => {
+      if (r[k] != null && String(r[k]).trim() !== '') return String(r[k]).trim();
+      for (const key of Object.keys(r)) {
+        if (key === k) continue;
+        if (key.startsWith(k) || key.includes(k)) {
+          const v = String(r[key] || '').trim();
+          if (v) return v;
+        }
+      }
+      return '';
+    };
     const name     = g('お名前（カタカナ フルネーム）') || g('お名前(カタカナ フルネーム）');
+    const email    = (g('メールアドレス') || g('メールアドレス_1')).toLowerCase();
     const gender   = g('性別');
     const age      = g('年齢');
     const source   = g('何を見て知りましたか？');
     const ts       = g('タイムスタンプ');
     const time     = g('来場予定時間（おおよそで構いません）') || g('大体何時頃にご来店されますか？(目安で構いません。実際のご来店時間と異なっても大丈夫です）');
-    const dateRaw  = g('参加希望日') || g('参加日程');
-    const c11      = g('9/12（土）の参加人数');
-    const c12      = g('9/13（日）の参加人数');
+    const dateRaw  = g('参加日程（複数選択可）') || g('参加希望日') || g('参加日程');
 
-    let date, count12, count13;
-    if (dateRaw.includes('両日') || (dateRaw.includes('12') && dateRaw.includes('13'))) {
-      date = '両日';
-      count12 = parseCount(c11) || 1;
-      count13 = parseCount(c12) || 1;
-    } else if (dateRaw.includes('12')) {
-      date = '9/12'; count12 = parseCount(c11) || 1; count13 = 0;
-    } else if (dateRaw.includes('13')) {
-      date = '9/13'; count12 = 0; count13 = parseCount(c12) || 1;
+    // どのイベントの回答かを判定
+    const jan23 = g('1/23（土）の参加人数');
+    const orgNameV2 = g('代表者 お名前');       // 新形式(2027-01 多人数対応)の判別子
+    const orgGenderV2 = g('代表者 性別');
+    const orgAgeV2 = g('代表者 年齢');
+    const orgPlanV2 = g('代表者 プラン');
+    const nov14 = g('11/14（土）の参加人数');
+    const nov15 = g('11/15（日）の参加人数');
+    const sep12full = g('9/12（土）の参加人数');
+    const sep13full = g('9/13（日）の参加人数');
+    const sep12half = g('9/12(土)');
+    const sep13half = g('9/13(日)');
+
+    let event;
+    if (orgNameV2 || orgGenderV2 || orgPlanV2) {
+      event = '2027-01';
+    } else if (jan23) {
+      event = '2027-01';
+    } else if (nov14 || nov15) {
+      event = '2026-11';
+    } else if (sep12full || sep13full || sep12half || sep13half) {
+      event = '2026-09';
+    } else if (dateRaw.includes('1/23')) {
+      event = '2027-01';
+    } else if (dateRaw.includes('11/14') || dateRaw.includes('11/15')) {
+      event = '2026-11';
+    } else if (dateRaw.includes('9/12') || dateRaw.includes('9/13') || dateRaw.includes('両日')) {
+      event = '2026-09';
     } else {
       return null;
     }
-    return { name, gender, age, source, ts, time, date, count12, count13, count: Math.max(count12, count13) };
+
+    let date, count12, count13;
+
+    // 新形式(2027-01 多人数対応)専用パース: 代表者+同伴者のカウントを合算
+    let v2Fields = null;
+    if (event === '2027-01' && (orgNameV2 || orgGenderV2)) {
+      let count = 0;
+      if (orgNameV2 || orgGenderV2) count = 1;
+      for (let i = 1; i <= 3; i++) {
+        const nm = g(`同伴者${i} お名前`);
+        if (nm) count++;
+      }
+      v2Fields = {
+        name: orgNameV2 || name,
+        gender: orgGenderV2,
+        age: orgAgeV2,
+        plan: orgPlanV2,
+        count,
+      };
+      date = '1/23';
+      count12 = count;
+      count13 = 0;
+    } else if (event === '2027-01') {
+      const n23 = parseCount(jan23);
+      if (n23 > 0) {
+        date = '1/23'; count12 = n23; count13 = 0;
+      } else if (dateRaw.includes('1/23')) {
+        date = '1/23'; count12 = 1; count13 = 0;
+      } else {
+        return null;
+      }
+    } else if (event === '2026-11') {
+      // 新ロジック(応急パッチ後): "参加しない"=0、両人数フィールドから直接判定
+      const n11 = parseCount(nov14);
+      const n12 = parseCount(nov15);
+      if (n11 > 0 && n12 > 0) {
+        date = '両日'; count12 = n11; count13 = n12;
+      } else if (n11 > 0) {
+        date = '11/14'; count12 = n11; count13 = 0;
+      } else if (n12 > 0) {
+        date = '11/15'; count12 = 0; count13 = n12;
+      } else if (dateRaw.includes('両日')) {
+        date = '両日'; count12 = 1; count13 = 1;
+      } else if (dateRaw.includes('11/14')) {
+        date = '11/14'; count12 = 1; count13 = 0;
+      } else if (dateRaw.includes('11/15')) {
+        date = '11/15'; count12 = 0; count13 = 1;
+      } else {
+        return null;
+      }
+    } else {
+      // 旧ロジック(パッチ前・2026-09開催時運用と同じ):
+      // - 全角カッコの参加人数フィールドのみ読む(単日半角フィールドは無視)
+      // - parseCountLegacy(empty)=1 でフォールバック
+      const c11 = sep12full;
+      const c12 = sep13full;
+      if (dateRaw.includes('両日') || (dateRaw.includes('12') && dateRaw.includes('13'))) {
+        date = '両日';
+        count12 = parseCountLegacy(c11) || 1;
+        count13 = parseCountLegacy(c12) || 1;
+      } else if (dateRaw.includes('12')) {
+        date = '9/12'; count12 = parseCountLegacy(c11) || 1; count13 = 0;
+      } else if (dateRaw.includes('13')) {
+        date = '9/13'; count12 = 0; count13 = parseCountLegacy(c12) || 1;
+      } else {
+        return null;
+      }
+    }
+
+    if (v2Fields) {
+      return {
+        name: v2Fields.name, email,
+        gender: v2Fields.gender, age: v2Fields.age,
+        source, ts, time: '',
+        date, count12, count13, count: v2Fields.count,
+        event, plan: v2Fields.plan,
+      };
+    }
+    return { name, email, gender, age, source, ts, time, date, count12, count13, count: Math.max(count12, count13), event };
   }).filter(Boolean).filter(r => r.name || r.gender);
+}
+
+// 同メールアドレスの重複予約は最新送信のみを残す（前送信は完全に上書き）
+function dedupByEmail(rows) {
+  const sorted = [...rows].sort((a,b) => new Date(a.ts) - new Date(b.ts));
+  const latestByEmail = new Map();
+  for (const r of sorted) {
+    if (!r.email) continue;
+    latestByEmail.set(r.email, r);
+  }
+  return sorted.filter(r => !r.email || latestByEmail.get(r.email) === r);
+}
+
+function setEvent(eventId) {
+  currentEventId = eventId;
+  let filtered = ALL_DATA.filter(r => r.event === eventId);
+  // 2026-11 以降のイベントはメール重複を排除して最新送信のみ残す
+  if (eventId === '2026-11' || eventId === '2027-01') {
+    filtered = dedupByEmail(filtered);
+  }
+  DATA = filtered;
+  updateEventLabels();
+
+  // 2027-01 のときのみサブタブ表示
+  const subTabs = document.getElementById('subTabs');
+  if (eventId === '2027-01') {
+    subTabs.style.display = 'flex';
+    setSubTab(currentSubTab);
+  } else {
+    subTabs.style.display = 'none';
+    document.getElementById('main-data').style.display = '';
+    document.getElementById('main-roster').style.display = 'none';
+    render();
+  }
+}
+
+function setSubTab(sub) {
+  currentSubTab = sub;
+  document.querySelectorAll('.sub-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.sub === sub);
+  });
+  if (sub === 'data') {
+    document.getElementById('main-data').style.display = '';
+    document.getElementById('main-roster').style.display = 'none';
+    render();
+  } else {
+    document.getElementById('main-data').style.display = 'none';
+    document.getElementById('main-roster').style.display = '';
+    renderRoster();
+  }
+}
+
+function updateEventLabels() {
+  const ev = getEvent();
+  const kSunKpi = document.getElementById('k-sun-label').parentElement;
+  const bSat = document.getElementById('btn-print-sat');
+  const bSun = document.getElementById('btn-print-sun');
+
+  document.getElementById('k-sat-label').textContent = ev.dateSatShort + ' 来場予定';
+  if (ev.singleDay) {
+    kSunKpi.style.display = 'none';
+    bSun.style.display = 'none';
+    document.getElementById('fDate').innerHTML =
+      `<option value="">全日程</option>
+       <option value="${ev.dateSat}">${ev.dateSatShort}</option>`;
+  } else {
+    kSunKpi.style.display = '';
+    bSun.style.display = '';
+    document.getElementById('k-sun-label').textContent = ev.dateSunShort + ' 来場予定';
+    document.getElementById('fDate').innerHTML =
+      `<option value="">全日程</option>
+       <option value="${ev.dateSat}">${ev.dateSatShort}</option>
+       <option value="${ev.dateSun}">${ev.dateSunShort}</option>
+       <option value="両日">両日参加</option>`;
+    bSun.textContent = `🖨 ${ev.dateSun} 印刷`;
+    bSun.onclick = () => printList(ev.dateSun);
+  }
+  bSat.textContent = `🖨 ${ev.dateSat} 印刷`;
+  bSat.onclick = () => printList(ev.dateSat);
+  document.querySelectorAll('.event-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.event === currentEventId);
+  });
 }
 
 function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
@@ -189,21 +552,25 @@ function renderCharts() {
   const sun   = DATA.reduce((a,r) => a + (r.count13||0), 0);
 
   // 日程別男女比
-  const dgMale   = [
+  const ev = getEvent();
+  const dgMaleAll   = [
     DATA.filter(r=>r.gender==='男性').reduce((a,r)=>a+(r.count12||0),0),
     DATA.filter(r=>r.gender==='男性').reduce((a,r)=>a+(r.count13||0),0)
   ];
-  const dgFemale = [
+  const dgFemaleAll = [
     DATA.filter(r=>r.gender==='女性').reduce((a,r)=>a+(r.count12||0),0),
     DATA.filter(r=>r.gender==='女性').reduce((a,r)=>a+(r.count13||0),0)
   ];
-  const dgTotal  = [dgMale[0]+dgFemale[0], dgMale[1]+dgFemale[1]];
+  const dgMale   = ev.singleDay ? [dgMaleAll[0]]   : dgMaleAll;
+  const dgFemale = ev.singleDay ? [dgFemaleAll[0]] : dgFemaleAll;
+  const dgLabels = ev.singleDay ? [ev.dateSatShort] : [ev.dateSatShort, ev.dateSunShort];
+  const dgTotal  = dgMale.map((m, i) => m + dgFemale[i]);
 
   destroyChart('cDateGender');
   charts['cDateGender'] = new Chart(document.getElementById('cDateGender'), {
     type: 'bar',
     data: {
-      labels: ['9/12（土）','9/13（日）'],
+      labels: dgLabels,
       datasets: [
         { label:'男性', data: dgMale,   backgroundColor:'#5BA8C8', borderRadius:4, borderSkipped:false },
         { label:'女性', data: dgFemale, backgroundColor:'#E87070', borderRadius:4, borderSkipped:false }
@@ -301,13 +668,14 @@ function renderTable() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   document.getElementById('noData').style.display = filtered.length === 0 ? 'block' : 'none';
+  const ev = getEvent();
   filtered.forEach((r, i) => {
-    const db = r.date==='9/12' ? '<span class="badge b-sat">9/12 土</span>'
-             : r.date==='9/13' ? '<span class="badge b-sun">9/13 日</span>'
+    const db = r.date===ev.dateSat ? `<span class="badge b-sat">${ev.dateSat} 土</span>`
+             : r.date===ev.dateSun ? `<span class="badge b-sun">${ev.dateSun} 日</span>`
              : r.date==='両日' ? '<span class="badge b-both">両日</span>' : r.date;
     const gb = r.gender==='男性' ? '<span class="badge b-male">男性</span>'
              : r.gender==='女性' ? '<span class="badge b-female">女性</span>' : r.gender||'—';
-    const ts = r.ts ? r.ts.replace('2026/','').split(' ')[0]+' '+(r.ts.split(' ')[1]||'').slice(0,5) : '';
+    const ts = r.ts ? r.ts.replace(/^\d{4}\//,'').split(' ')[0]+' '+(r.ts.split(' ')[1]||'').slice(0,5) : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `<td style="color:var(--muted)">${i+1}</td><td style="font-weight:500">${r.name||'—'}</td><td>${gb}</td><td>${r.age||'—'}</td><td>${db}</td><td style="color:var(--muted)">${r.time||'—'}</td><td style="color:var(--muted)">${r.source||'—'}</td><td style="color:var(--muted);font-size:11px">${ts}</td>`;
     tbody.appendChild(tr);
@@ -315,13 +683,21 @@ function renderTable() {
 }
 
 function render() {
+  const ev = getEvent();
   const sat  = DATA.reduce((a,r) => a+(r.count12||0), 0);
   const sun  = DATA.reduce((a,r) => a+(r.count13||0), 0);
   document.getElementById('k-total').textContent = sat + sun;
   document.getElementById('k-sat').textContent   = sat;
   document.getElementById('k-sun').textContent   = sun;
-  const bothCount = DATA.filter(r=>r.date==='両日').length;
-  document.getElementById('k-both-note').textContent = `※ うち両日参加: ${bothCount}名（9/12・9/13 両方にカウント済み）`;
+  const bothNoteEl = document.getElementById('k-both-note');
+  if (ev.singleDay) {
+    bothNoteEl.textContent = '';
+    bothNoteEl.style.display = 'none';
+  } else {
+    bothNoteEl.style.display = '';
+    const bothCount = DATA.filter(r=>r.date==='両日').length;
+    bothNoteEl.textContent = `※ うち両日参加: ${bothCount}名（${ev.dateSat}・${ev.dateSun} 両方にカウント済み）`;
+  }
   renderCharts();
   renderTable();
   document.getElementById('loadingArea').style.display = 'none';
@@ -329,71 +705,313 @@ function render() {
   document.getElementById('updatedAt').textContent = '取得: ' + new Date().toLocaleTimeString('ja-JP');
 }
 
-function loadData() {
-  document.getElementById('updatedAt').textContent = '更新中...';
-  Papa.parse(CSV_URL, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: results => { DATA = parseRows(results.data); render(); },
-    error: () => { document.getElementById('loadingArea').textContent = 'データの読み込みに失敗しました。'; }
+function fetchCsv(url) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(url, {
+      download: true, header: true, skipEmptyLines: true,
+      complete: results => resolve(results.data),
+      error: reject,
+    });
   });
 }
+
+function loadData() {
+  document.getElementById('updatedAt').textContent = '更新中...';
+  const fetchSafe = (url) =>
+    (!url || url === CSV_PLACEHOLDER) ? Promise.resolve([]) : fetchCsv(url).catch(() => []);
+  Promise.all([
+    fetchSafe(CSV_URLS['2026-09']),
+    fetchSafe(CSV_URLS['2026-11']),
+    fetchSafe(CSV_URLS['2027-01']),
+    fetchSafe(ROSTER_CSV_URL),
+  ]).then(([oldRows, novRows, janRows, rosterRows]) => {
+    const sep = parseRows(oldRows).filter(r => r.event === '2026-09');
+    const nov = parseRows(novRows).filter(r => r.event === '2026-11');
+    const jan = parseRows(janRows).filter(r => r.event === '2027-01');
+    ALL_DATA = [...sep, ...nov, ...jan];
+    // 受付名簿データを保持（1行1人）
+    ROSTER = rosterRows.map((r, i) => ({
+      row: i + 2, // 実シート行番号
+      reservationId: (r['予約ID']||'').trim(),
+      role: (r['区分']||'').trim(),
+      name: (r['氏名カナ']||'').trim(),
+      gender: (r['性別']||'').trim(),
+      age: (r['年齢']||'').trim(),
+      plan: (r['プラン']||'').trim(),
+      price: parseInt(r['料金']||0, 10) || 0,
+      email: (r['代表者メール']||'').trim(),
+      eventDate: (r['開催日']||'').trim(),
+      checkedIn: String(r['来場']||'').toUpperCase() === 'TRUE',
+    }));
+    setEvent(currentEventId);
+  }).catch(err => {
+    console.error(err);
+    document.getElementById('loadingArea').textContent = 'データの読み込みに失敗しました。';
+  });
+}
+
+/* =========== Roster view ============ */
+function rosterKanaFilter(name, row) {
+  if (!row) return true;
+  const first = (name || '').trim().charAt(0);
+  const chars = KANA_ROWS[row] || '';
+  return chars.indexOf(first) >= 0;
+}
+
+function summarizeRoster(records) {
+  const s = {
+    totalReserved: 0, walkinCount: 0, checkedInCount: 0, notYetCount: 0,
+    maleReserved: 0, femaleReserved: 0, maleCheckedIn: 0, femaleCheckedIn: 0,
+  };
+  records.forEach(r => {
+    const isWalkin = r.role === '当日';
+    if (isWalkin) s.walkinCount++;
+    else s.totalReserved++;
+    if (r.checkedIn) s.checkedInCount++;
+    else if (!isWalkin) s.notYetCount++;
+    if (r.gender === '男性') {
+      if (!isWalkin) s.maleReserved++;
+      if (r.checkedIn) s.maleCheckedIn++;
+    }
+    if (r.gender === '女性') {
+      if (!isWalkin) s.femaleReserved++;
+      if (r.checkedIn) s.femaleCheckedIn++;
+    }
+  });
+  return s;
+}
+
+function renderRoster() {
+  const summary = summarizeRoster(ROSTER);
+  document.getElementById('r-k-checked').textContent = summary.checkedInCount;
+  document.getElementById('r-k-reserved').textContent = summary.totalReserved;
+  document.getElementById('r-k-walkin').textContent = summary.walkinCount;
+  document.getElementById('r-k-notyet').textContent = summary.notYetCount;
+  document.getElementById('r-male-checked').textContent = summary.maleCheckedIn;
+  document.getElementById('r-female-checked').textContent = summary.femaleCheckedIn;
+  document.getElementById('r-male-reserved').textContent = summary.maleReserved;
+  document.getElementById('r-female-reserved').textContent = summary.femaleReserved;
+
+  const filtered = ROSTER.filter(r => {
+    if (rosterFilter.search && !r.name.toLowerCase().includes(rosterFilter.search.toLowerCase())) return false;
+    if (rosterFilter.row && !rosterKanaFilter(r.name, rosterFilter.row)) return false;
+    if (rosterFilter.gender && r.gender !== rosterFilter.gender) return false;
+    if (rosterFilter.checkin === 'checked' && !r.checkedIn) return false;
+    if (rosterFilter.checkin === 'notyet' && r.checkedIn) return false;
+    if (rosterFilter.plan && r.plan !== rosterFilter.plan) return false;
+    return true;
+  });
+
+  // 予約IDごとにグループ化（申込者が上に来るように）
+  const groups = {};
+  filtered.forEach(r => {
+    if (!groups[r.reservationId]) groups[r.reservationId] = [];
+    groups[r.reservationId].push(r);
+  });
+  const sortedGroups = Object.keys(groups).map(id => {
+    const members = groups[id].sort((a, b) => {
+      // 申込者 → 同伴 → 当日 の順
+      const order = { '申込者': 0, '同伴': 1, '当日': 2 };
+      return (order[a.role] || 9) - (order[b.role] || 9);
+    });
+    return members;
+  }).sort((a, b) => {
+    // 申込者の名前で辞書順
+    const an = (a.find(x => x.role === '申込者') || a[0]).name;
+    const bn = (b.find(x => x.role === '申込者') || b[0]).name;
+    return an.localeCompare(bn, 'ja');
+  });
+
+  const list = document.getElementById('rosterList');
+  const empty = document.getElementById('rosterEmpty');
+  if (sortedGroups.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = sortedGroups.map(members => {
+    return '<div class="reservation-group">' + members.map(renderPersonCard).join('') + '</div>';
+  }).join('');
+
+  // チェックインボタンイベント
+  document.querySelectorAll('.checkin-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleCheckin(parseInt(btn.dataset.row, 10), btn.dataset.checked === 'true'));
+  });
+}
+
+function renderPersonCard(r) {
+  const genderClass = r.gender === '男性' ? 'gender-m' : 'gender-f';
+  const roleBadge = r.role === '申込者' ? 'badge-organizer' :
+                    r.role === '同伴' ? 'badge-companion' : 'badge-walkin';
+  const planClass = r.plan === '飲み放題' ? 'plan-badge nomi' : 'plan-badge';
+  const checkinLabel = r.checkedIn ? '✓ 来場済み' : '受付する';
+  const checkedClass = r.checkedIn ? 'checked' : '';
+  return `<div class="person-card ${r.checkedIn ? 'checked-in' : ''}">
+    <span class="person-badge ${roleBadge}">${r.role}</span>
+    <div class="person-name">${r.name || '—'}</div>
+    <div class="person-meta">
+      <span class="${genderClass}">${r.gender}</span>
+      <span>${r.age}</span>
+      <span class="${planClass}">${r.plan}</span>
+    </div>
+    <button class="checkin-btn ${checkedClass}" data-row="${r.row}" data-checked="${r.checkedIn}">${checkinLabel}</button>
+  </div>`;
+}
+
+async function toggleCheckin(row, currentChecked) {
+  const newChecked = !currentChecked;
+  const record = ROSTER.find(x => x.row === row);
+  if (!record) return;
+  record.checkedIn = newChecked;
+  renderRoster();
+  try {
+    const res = await fetch(WEBAPP_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'checkin', row, checked: newChecked }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    record.checkedIn = !!data.checked;
+    renderRoster();
+  } catch (err) {
+    record.checkedIn = currentChecked;
+    renderRoster();
+    alert('チェックイン更新失敗: ' + err.message);
+  }
+}
+
+function showWalkinQr() {
+  const qr = qrcode(0, 'M');
+  qr.addData(WALKIN_URL);
+  qr.make();
+  document.getElementById('qrCode').innerHTML = qr.createImgTag(6);
+  document.getElementById('qrUrl').textContent = WALKIN_URL;
+  document.getElementById('qrModal').style.display = 'flex';
+}
+
+function closeQrModal() {
+  document.getElementById('qrModal').style.display = 'none';
+}
+
+// Roster filter events (初期化はDOMContentLoadedで)
+function initRosterFilters() {
+  document.getElementById('rosterSearch').addEventListener('input', e => {
+    rosterFilter.search = e.target.value;
+    if (currentSubTab === 'roster') renderRoster();
+  });
+  document.getElementById('rosterGender').addEventListener('change', e => {
+    rosterFilter.gender = e.target.value;
+    if (currentSubTab === 'roster') renderRoster();
+  });
+  document.getElementById('rosterCheckin').addEventListener('change', e => {
+    rosterFilter.checkin = e.target.value;
+    if (currentSubTab === 'roster') renderRoster();
+  });
+  document.getElementById('rosterPlan').addEventListener('change', e => {
+    rosterFilter.plan = e.target.value;
+    if (currentSubTab === 'roster') renderRoster();
+  });
+  document.querySelectorAll('#hiraganaRow button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      rosterFilter.row = btn.dataset.row;
+      document.querySelectorAll('#hiraganaRow button').forEach(b => b.classList.toggle('active', b === btn));
+      if (currentSubTab === 'roster') renderRoster();
+    });
+  });
+  // ESC で QR モーダルを閉じる
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeQrModal();
+  });
+  // オーバーレイクリックで閉じる
+  document.getElementById('qrModal').addEventListener('click', e => {
+    if (e.target.id === 'qrModal') closeQrModal();
+  });
+}
+initRosterFilters();
 
 document.getElementById('search').addEventListener('input', renderTable);
 document.getElementById('fDate').addEventListener('change', renderTable);
 document.getElementById('fGender').addEventListener('change', renderTable);
 
 function printList(date) {
+  const ev = getEvent();
   const list = DATA.filter(r => r.date===date || r.date==='両日').sort((a,b) => (a.name||'').localeCompare(b.name||'','ja'));
-  const dateLabel = date==='9/12' ? '2026年9月12日（土）' : '2026年9月13日（日）';
+  const dateLabel = date===ev.dateSat ? ev.dateSatFull : ev.dateSunFull;
+  const personCount = r => Math.max(1, (date===ev.dateSat ? r.count12 : r.count13) || 1);
+  const totalPeople = list.reduce((a,r) => a + personCount(r), 0);
   const cols = 4;
   const perCol = Math.ceil(list.length/cols);
   const columns = Array.from({length:cols}, (_,ci) =>
-    list.slice(ci*perCol, (ci+1)*perCol).map((r,i) => `
+    list.slice(ci*perCol, (ci+1)*perCol).map((r,i) => {
+      const n = personCount(r);
+      const boxes = Array.from({length:n}, () => '<span class="box"></span>').join('');
+      return `
       <div class="row">
         <span class="num">${ci*perCol+i+1}</span>
-        <span class="box"></span>
+        <span class="boxes">${boxes}</span>
         <span class="name">${r.name||'—'}</span>
         <span class="gender ${r.gender==='男性'?'male':'female'}">${r.gender==='男性'?'男':'女'}</span>
-      </div>`).join('')
+      </div>`;
+    }).join('')
   );
+
   const w = window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <title>受付リスト ${dateLabel}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Hiragino Kaku Gothic Pro','Helvetica Neue',sans-serif;color:#111;padding:12px;font-size:11px}
-.brand{font-size:10px;letter-spacing:.25em;color:#B8903C;text-transform:uppercase;margin-bottom:2px}
-h1{font-size:14px;font-weight:700;margin-bottom:3px}
-.meta{font-size:10px;color:#666;margin-bottom:10px;display:flex;gap:16px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0 12px;border-top:2px solid #111}
-.col{border-right:1px solid #DDD;padding-right:8px}
+body{font-family:'Hiragino Kaku Gothic Pro','Helvetica Neue',sans-serif;color:#111;padding:8px;font-size:10px}
+.brand{font-size:9px;letter-spacing:.25em;color:#B8903C;text-transform:uppercase;margin-bottom:1px}
+h1{font-size:13px;font-weight:700;margin-bottom:2px}
+.meta{font-size:9px;color:#666;margin-bottom:6px;display:flex;gap:14px}
+.grid{display:grid;grid-template-columns:repeat(${cols},1fr);gap:0 8px;border-top:1.5px solid #111}
+.col{border-right:1px solid #DDD;padding-right:6px}
 .col:last-child{border-right:none}
-.col-head{font-size:8px;letter-spacing:.1em;color:#888;text-transform:uppercase;padding:4px 0;border-bottom:1px solid #BBB;margin-bottom:2px}
-.row{display:flex;align-items:center;gap:4px;padding:3.5px 0;border-bottom:1px solid #EBEBEB}
+.col-head{font-size:7px;letter-spacing:.1em;color:#888;text-transform:uppercase;padding:2px 0;border-bottom:1px solid #BBB;margin-bottom:1px}
+.row{display:flex;align-items:center;gap:3px;padding:1.2px 0;border-bottom:1px solid #EBEBEB}
 .row:nth-child(even){background:#F8F8F8}
-.num{color:#CCC;font-size:9px;width:18px;flex-shrink:0;text-align:right}
-.box{display:inline-block;width:12px;height:12px;border:1.5px solid #444;border-radius:2px;flex-shrink:0}
-.name{font-weight:600;font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gender{font-size:10px;font-weight:600;width:14px;flex-shrink:0}
+.num{color:#BBB;font-size:8px;width:14px;flex-shrink:0;text-align:right}
+.boxes{display:inline-flex;gap:2px;flex-shrink:0}
+.box{display:inline-block;width:9px;height:9px;border:1.2px solid #444;border-radius:2px;flex-shrink:0}
+.name{font-weight:600;font-size:9.5px;flex:1;min-width:0;white-space:nowrap;letter-spacing:-0.02em;line-height:1.1}
+.gender{font-size:8.5px;font-weight:600;width:10px;flex-shrink:0}
 .male{color:#3A8FC4}.female{color:#E06080}
-@media print{body{padding:8px}@page{margin:8mm;size:A4 portrait}}
+.walkin-page{page-break-before:always;padding-top:8px}
+.walkin{border:1.5px solid #111;padding:8px 10px;height:calc((100vh - 30mm) / 2);position:relative}
+.walkin-title{font-size:14px;font-weight:700}
+@media print{body{padding:4px}@page{margin:5mm;size:A4 portrait}.walkin{height:calc((100vh - 20mm) / 2)}}
 </style></head><body>
-<p class="brand">AGORA MARCHÉ</p>
+<p class="brand">AGORA SOCIAL</p>
 <h1>受付チェックリスト — ${dateLabel}</h1>
 <div class="meta">
-  <span>総数: ${list.length}名</span>
+  <span>来場予定: ${totalPeople}名</span>
   <span>男性: ${list.filter(r=>r.gender==='男性').length}名</span>
   <span>女性: ${list.filter(r=>r.gender==='女性').length}名</span>
   <span>印刷日時: ${new Date().toLocaleString('ja-JP')}</span>
 </div>
 <div class="grid">
-${columns.map(col=>`<div class="col"><div class="col-head">お名前</div>${col}</div>`).join('')}
+${columns.map(col=>`<div class="col"><div class="col-head">予約者</div>${col}</div>`).join('')}
 </div>
+<div class="walkin-page">
+  <div class="walkin">
+    <span class="walkin-title">当日参加</span>
+  </div>
+</div>
+<script>
+window.addEventListener('load', () => {
+  document.querySelectorAll('.name').forEach(el => {
+    let fs = 9.5;
+    while (el.scrollWidth > el.clientWidth && fs > 6.5) {
+      fs -= 0.3;
+      el.style.fontSize = fs + 'px';
+    }
+  });
+  setTimeout(() => window.print(), 200);
+});
+<\/script>
 </body></html>`);
   w.document.close();
-  setTimeout(() => w.print(), 400);
 }
 
 loadData();
